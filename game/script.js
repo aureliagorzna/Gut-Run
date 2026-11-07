@@ -8,7 +8,7 @@ canvas.style.touchAction = "none";
 // <----------------------- SETTINGS -----------------------> //
 
 let gameStarted = false;
-const gameSpeed = 0.4; // how fast gameplay image is moving
+const gameSpeed = 0.3 * 6; // how fast gameplay image is moving
 const playerFallSpeed = 3; // how fast the player is falling
 const playerJumpSpeed = 4; // how fast player moves during a jump
 let timeoutAfterJump = 300; // how long player doesn't fall after a jump
@@ -16,6 +16,7 @@ let timeoutAfterJump = 300; // how long player doesn't fall after a jump
 let playerPos = 300; // starting Y pos
 const minPlayerPos = 580;
 const maxPlayerPos = 200;
+const gameplayLimit = 0.30 // 1 means full width of gameplay is used
 let isPlayerJumping = false;
 let isJumpHeld = false;
 let isFallingDisabled = false;
@@ -31,6 +32,21 @@ const assetSources = {
     border: "../assets/border.png",
     gameplay: "../assets/01_game/gameplay.png",
     player: "../assets/01_game/player.png",
+    bac1: "../assets/01_game/bac1.png",
+    bac2: "../assets/01_game/bac2.png",
+    bac3: "../assets/01_game/bac3.png",
+    bac4: "../assets/01_game/bac4.png",
+    bac5: "../assets/01_game/bac5.png",
+    bac6: "../assets/01_game/bac6.png",
+    txt1: "../assets/01_game/txt1.png",
+    txt2: "../assets/01_game/txt2.png",
+    txt3: "../assets/01_game/txt3.png",
+    txt4: "../assets/01_game/txt4.png",
+    txt5: "../assets/01_game/txt5.png",
+    txt6: "../assets/01_game/txt6.png",
+    txt7: "../assets/01_game/txt7.png",
+    txt8: "../assets/01_game/txt8.png",
+    txt9: "../assets/01_game/txt9.png",
 };
 
 const assets = {};
@@ -60,6 +76,7 @@ function loadAssets(onComplete) {
 
 loadAssets(() => {
     generateTunnelMap();
+    generateObstacles()
     startGame();
 });
 
@@ -110,6 +127,9 @@ function drawImages() {
     ctx.drawImage(assets.background, 0, 0);
     drawAsset(assets.bgTexture, 0, 80);
     drawAsset(assets.gameplay, gameplayPos, 100, 0, -120);
+
+    drawObstacles()
+
     drawAsset(assets.logo, 0, 0);
     drawAsset(assets.tut, 0, 0);
     drawAsset(assets.border, 0, 0);
@@ -134,37 +154,36 @@ function drawImages() {
     // ctx.stroke();
 }
 
-// <----------------------- GAME STATE -----------------------> //
+function drawObstacles() {
+    const scaleY = (assets.gameplay.height / 2 - 120)
+                  / assets.gameplay.height;
 
-let fallingTimeout;
-const disableFallingShortTime = () => {
-    isFallingDisabled = true;
-    clearTimeout(fallingTimeout);
+    obstacles.forEach(obstacle => {
+        const sprite = obstacle.sprite;
 
-    fallingTimeout = setTimeout(() => {
-        isFallingDisabled = false;
-    }, timeoutAfterJump);
-};
+        const obstacleScale = obstacle.scale || 0.5
 
-let gameplayPos = 0;
-const moveGameplay = () => {
-    if (gameplayPos > -assets.gameplay.width / 2 + canvas.width) {
-        gameplayPos -= gameSpeed;
-    }
-};
+        const obstacleWidth = sprite.width * obstacleScale;
+        const obstacleHeight = sprite.height * obstacleScale;
 
-const playerFall = () => {
-    if (isFallingDisabled || isPlayerJumping || playerPos >= minPlayerPos) return;
-    playerPos += playerFallSpeed;
-};
+        const screenX = gameplayPos + obstacle.x;
+        const screenY = 100 + obstacle.y * scaleY;
 
-const playerJump = () => {
-    if (!isJumpHeld) return;
+        ctx.save();
 
-    if (playerPos > maxPlayerPos) {
-        playerPos = Math.max(maxPlayerPos, playerPos - playerJumpSpeed);
-    }
-};
+        ctx.translate(screenX, screenY);
+
+        ctx.drawImage(
+            sprite,
+            -obstacleWidth / 2,
+            -obstacleHeight / 2,
+            obstacleWidth,
+            obstacleHeight
+        );
+
+        ctx.restore();
+    });
+}
 
 // <----------------------- COLLISION -----------------------> //
 
@@ -229,6 +248,82 @@ function checkCollision() {
 
     return false;
 }
+
+// <----------------------- OBSTACLES -----------------------> //
+
+let obstacles = [];
+
+function generateObstacles() {
+    const bacteriaSprites = [];
+
+    for (let i = 1; i <= 6; i++) {
+        bacteriaSprites.push(assets[`bac${i}`]);
+    }
+
+    const positionedBacterias = [
+        { x: 125,  y: 700,  sprite: bacteriaSprites[5], scale: 0.4 },
+        { x: 275,  y: 900,  sprite: bacteriaSprites[1], scale: 0.5 },
+        { x: 425,  y: 835,  sprite: bacteriaSprites[0], scale: 0.3 },
+        { x: 600,  y: 1130,  sprite: bacteriaSprites[2], scale: 0.3 },
+        { x: 750,  y: 330,  sprite: bacteriaSprites[3], scale: 0.5 },
+        { x: 515,  y: 460,  sprite: bacteriaSprites[4], scale: 0.4 },
+    ];
+
+    positionedBacterias.forEach(bacteria => obstacles.push(bacteria))
+
+    const textSprites = []
+
+    for (let i = 1; i <= 9; i++) {
+        textSprites.push(assets[`txt${i}`]);
+    }
+
+    const positionedTexts = [
+        { x: 125,  y: 900,  sprite: textSprites[0], scale: 0.5 },
+        { x: 325,  y: 470,  sprite: textSprites[1], scale: 0.3 },
+        { x: 425,  y: 950,  sprite: textSprites[2], scale: 0.3 },
+        { x: 525,  y: 950,  sprite: textSprites[8], scale: 0.3 },
+        { x: 330,  y: 800,  sprite: textSprites[4], scale: 0.3 },
+        { x: 670,  y: 800,  sprite: textSprites[5], scale: 0.5 },
+        { x: 780,  y: 550,  sprite: textSprites[6], scale: 0.4 },
+        { x: 230,  y: 900,  sprite: textSprites[7], scale: 0.4 },
+        { x: 165,  y: 525,  sprite: textSprites[3], scale: 0.4 },
+    ]
+
+    positionedTexts.forEach(text => obstacles.push(text))
+}
+
+// <----------------------- GAME STATE -----------------------> //
+
+let fallingTimeout;
+const disableFallingShortTime = () => {
+    isFallingDisabled = true;
+    clearTimeout(fallingTimeout);
+
+    fallingTimeout = setTimeout(() => {
+        isFallingDisabled = false;
+    }, timeoutAfterJump);
+};
+
+const gameplayLength = -assets.gameplay.width / 2 + canvas.width
+let gameplayPos = -0;
+const moveGameplay = () => {
+    if (gameplayPos > gameplayLength * gameplayLimit) {
+        gameplayPos -= gameSpeed;
+    }
+};
+
+const playerFall = () => {
+    if (isFallingDisabled || isPlayerJumping || playerPos >= minPlayerPos) return;
+    playerPos += playerFallSpeed;
+};
+
+const playerJump = () => {
+    if (!isJumpHeld) return;
+
+    if (playerPos > maxPlayerPos) {
+        playerPos = Math.max(maxPlayerPos, playerPos - playerJumpSpeed);
+    }
+};
 
 // <----------------------- GAME CONTROL -----------------------> //
 
