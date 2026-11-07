@@ -7,8 +7,9 @@ canvas.style.touchAction = "none";
 
 // <----------------------- SETTINGS -----------------------> //
 
+const DEBUG = false
 let gameStarted = false;
-const gameSpeed = 0.3 * 6; // how fast gameplay image is moving
+const gameSpeed = 0.3; // how fast gameplay image is moving
 const playerFallSpeed = 3; // how fast the player is falling
 const playerJumpSpeed = 4; // how fast player moves during a jump
 let timeoutAfterJump = 300; // how long player doesn't fall after a jump
@@ -127,12 +128,12 @@ function drawImages() {
     ctx.drawImage(assets.background, 0, 0);
     drawAsset(assets.bgTexture, 0, 80);
     drawAsset(assets.gameplay, gameplayPos, 100, 0, -120);
-
-    drawObstacles()
-
     drawAsset(assets.logo, 0, 0);
     drawAsset(assets.tut, 0, 0);
     drawAsset(assets.border, 0, 0);
+
+    drawObstacles()
+    drawAsset(assets.player, 60, playerPos);
 
     if (!gameStarted) {
         const gestureX = canvas.width / 2 - 30;
@@ -141,17 +142,9 @@ function drawImages() {
         drawAsset(assets.gesture, gestureX, gestureY);
     }
 
-    drawAsset(assets.player, 60, playerPos);
-
-    // Debug player collision marker
-    // const markerX = 60 + assets.player.width / 4;
-    // const markerY = playerPos + assets.player.height / 4;
-
-    // ctx.beginPath();
-    // ctx.arc(markerX, markerY, 5, 0, Math.PI * 2);
-    // ctx.strokeStyle = "lime";
-    // ctx.lineWidth = 1;
-    // ctx.stroke();
+    if (DEBUG) {
+        drawHitboxes()
+    }
 }
 
 function drawObstacles() {
@@ -183,6 +176,60 @@ function drawObstacles() {
 
         ctx.restore();
     });
+}
+
+function drawHitboxes() {
+    if (!gameStarted) return;
+
+    const playerX = 60 + assets.player.width / 4;
+    const playerY = playerPos + assets.player.height / 4;
+    const playerRadius = 5;
+
+    const scaleY = (assets.gameplay.height / 2 - 120)
+                 / assets.gameplay.height;
+
+    const hitboxScale = 0.6; // lower number = smaller hitboxes
+
+    ctx.save();
+
+    obstacles.forEach(obstacle => {
+        const sprite = obstacle.sprite;
+        const scale = obstacle.scale ?? 0.5;
+
+        const obstacleX = gameplayPos + obstacle.x;
+        const obstacleY = 100 + obstacle.y * scaleY;
+
+        const width = sprite.width * scale * hitboxScale;
+        const height = sprite.height * scale * hitboxScale;
+
+        const rotation = obstacle.rotation ?? 0;
+
+        ctx.translate(obstacleX, obstacleY);
+        ctx.rotate(rotation);
+
+        ctx.strokeStyle = "red";
+        ctx.lineWidth = 2;
+
+        ctx.strokeRect(
+            -width / 2,
+            -height / 2,
+            width,
+            height
+        );
+
+        // Reset transform for the next obstacle
+        ctx.restore();
+        ctx.save();
+    });
+
+    // Player hitbox
+    ctx.beginPath();
+    ctx.arc(playerX, playerY, playerRadius, 0, Math.PI * 2);
+    ctx.strokeStyle = "lime";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.restore();
 }
 
 // <----------------------- COLLISION -----------------------> //
@@ -243,6 +290,70 @@ function checkCollision() {
             if (pixels[index + 3] <= 128) {
                 return true;
             }
+        }
+    }
+
+    return false;
+}
+
+function checkObstacleCollision() {
+    if (!gameStarted) return false;
+
+    // Player collision marker
+    const playerX = 60 + assets.player.width / 4;
+    const playerY = playerPos + assets.player.height / 4;
+    const playerRadius = 5;
+
+    // Same transformations as obstacle rendering
+    const scaleY = (assets.gameplay.height / 2 - 120)
+                 / assets.gameplay.height;
+
+    // Smaller hitboxes = more forgiving collisions
+    const hitboxScale = 0.6;
+
+    for (const obstacle of obstacles) {
+
+        const sprite = obstacle.sprite;
+        const scale = obstacle.scale ?? 0.5;
+
+        const obstacleX = gameplayPos + obstacle.x;
+        const obstacleY = 100 + obstacle.y * scaleY;
+
+        const width = sprite.width * scale * hitboxScale;
+        const height = sprite.height * scale * hitboxScale;
+
+        // Move player position into obstacle's rotated coordinate system
+        const dx = playerX - obstacleX;
+        const dy = playerY - obstacleY;
+
+        const rotation = obstacle.rotation ?? 0;
+
+        const cos = Math.cos(rotation);
+        const sin = Math.sin(rotation);
+
+        const localX = dx * cos + dy * sin;
+        const localY = -dx * sin + dy * cos;
+
+        // Closest point on the smaller obstacle hitbox
+        const closestX = Math.max(
+            -width / 2,
+            Math.min(localX, width / 2)
+        );
+
+        const closestY = Math.max(
+            -height / 2,
+            Math.min(localY, height / 2)
+        );
+
+        const distanceX = localX - closestX;
+        const distanceY = localY - closestY;
+
+        if (
+            distanceX * distanceX +
+            distanceY * distanceY <=
+            playerRadius * playerRadius
+        ) {
+            return true;
         }
     }
 
@@ -334,7 +445,7 @@ function gameLogic() {
         playerJump();
         playerFall();
 
-        if (checkCollision()) {
+        if (checkCollision() || checkObstacleCollision()) {
             console.log("gameover");
         }
     }
