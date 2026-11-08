@@ -141,7 +141,7 @@ loadAssets(() => {
     startGame();
 });
 
-// <----------------------- LISTEN FOR CLICK -----------------------> //
+// <----------------------- EVENT LISTENERS -----------------------> //
 
 canvas.addEventListener("pointerdown", (event) => {
     event.preventDefault();
@@ -226,6 +226,40 @@ audioButton.addEventListener("pointerdown", event => {
 });
 
 audioButton.addEventListener("click", toggleAudio);
+
+// fix for Safari
+let audioUnlocked = false;
+function unlockAudio() {
+    if (audioUnlocked || !assets.music) return;
+    audioUnlocked = true;
+
+    Object.entries(assets.music).forEach(([name, audio]) => {
+        const restore = () => {
+            audio.muted = isAudioMuted;
+
+            // don't touch a sound the game has started in the meantime
+            if (!currentAudio.has(name)) {
+                audio.pause();
+                audio.currentTime = 0;
+            }
+        };
+
+        audio.muted = true;
+
+        const promise = audio.play();
+        if (promise) {
+            promise.then(restore).catch(() => {
+                audio.muted = isAudioMuted;
+            });
+        } else {
+            restore();
+        }
+    });
+}
+
+["pointerup", "touchend", "click"].forEach((type) => {
+    window.addEventListener(type, unlockAudio, { once: true });
+});
 
 function useWinCta(event) {
     const rect = canvas.getBoundingClientRect();
@@ -868,10 +902,13 @@ const playerJump = (frameMultiplier) => {
 const currentAudio = new Set()
 
 function playAudio(name) {
-    if (!assets.music[name]) return
+    const audio = assets.music[name]
+    if (!audio) return
 
-    assets.music[name].play()
     currentAudio.add(name)
+
+    const promise = audio.play()
+    if (promise) promise.catch(() => {})
 }
 
 function pauseAudio(name) {
