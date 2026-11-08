@@ -51,6 +51,7 @@ All settings are at the top of `game/script.js`.
 - **Forgiving hitboxes.** On purpose, because ad games should be easy (details in DECISIONS.md).
 - **Hold-to-jump.** I extended the classic tap-to-jump so holding keeps the player rising, which avoids tedious tapping.
 - **Viewport scaling is tuned for phones.** On desktop or tablet the ad can look stretched.
+- **Audio on iOS needs care.** My first version waited for all assets, including audio, before starting. On iPhone Safari that blocked the whole game, because audio only loads after a tap. I fixed it by loading images independently of audio and unlocking the sounds on the first tap. From now on I will be more cautious with audio on iOS and test on a real iPhone early, not at the end.
 - **Debug mode available** Switch it in `script.js`.
 
 ## AI note

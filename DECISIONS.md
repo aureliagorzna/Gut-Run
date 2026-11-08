@@ -66,6 +66,7 @@ Why things are built the way they are. For setup, known issues and next steps se
 - **Clean replay:** replaying pauses every sound and rewinds it to 0, so sounds never stack or double up.
 - **Crash sound:** the fail endcard appears 1.2 s after the hit, so the crash sound can be heard first.
 - **Mute toggle:** sets `muted` on all audio. Its `pointerdown` does not bubble to the canvas, so muting never counts as a jump.
+- **Safari/iPhone bug I fixed:** originally the loader waited for every file, including audio, before starting the game. iPhone Safari only loads audio after a tap, so the game never finished loading and showed a blank screen. I changed the loader so only images are required, and audio is loaded and unlocked after the first tap.
 
 ## 8. Click-out
 
