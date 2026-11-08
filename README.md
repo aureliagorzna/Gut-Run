@@ -42,7 +42,6 @@ All settings are at the top of `game/script.js`.
 - **Lengthen the run.** Use about 50% of the gut texture instead of 30%. I used less because I first had to place 15 obstacles somewhere playable, and a long run is both harder and too long for an ad. A longer tunnel would also fix the next point.
 - **Re-place the obstacles.** They are playable but a bit too densely packed. More room would let me space them out properly.
 - **Use an animation library (GSAP).** My animations are hand-written canvas code that works but is a little messy. A library would give me cleaner code and finer control. This was my first project using images and animation on canvas, and I learned a lot building it.
-- **Make movement frame-rate independent.** Speeds are per frame, so the game runs faster on 120 Hz screens. Using a delta time would fix that.
 - **Handle mobile toolbars.** The canvas uses `vh` units, so with visible browser toolbars the bottom (CTA) can sit below the fold. `dvh` or `visualViewport` would fix this.
 
 ## Known issues and shortcuts
