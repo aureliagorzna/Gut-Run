@@ -2,7 +2,15 @@
 
 A mobile tap-to-jump mini game for a gut-health campaign. Guide the poo through the gut, dodge the bacteria and "stress" words, and reach the end. Built with plain HTML, CSS and JavaScript on a `<canvas>`, no libraries.
 
+## Demo
+
 **[▶ PLAY IT HERE](https://aureliagorzna.github.io/Gut-Run/)** (best on a phone, or in your browser's mobile view)
+
+
+
+https://github.com/user-attachments/assets/c27d1a7f-640e-4f9b-935a-916bf0c2b329
+
+
 
 Why it is built this way: [DECISIONS.md](DECISIONS.md)
 
