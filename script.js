@@ -87,10 +87,18 @@ const assetSources = {
 };
 
 const assets = {};
+let totalRequiredAssets = 0; // images only, audio is not required
 let loadedCount = 0;
-let totalAssets = 0;
 
 function loadAssets(onComplete) {
+    function assetLoaded() {
+        loadedCount++;
+
+        if (loadedCount === totalRequiredAssets) {
+            onComplete();
+        }
+    }
+
     function load(source, target) {
         for (let key in source) {
             if (typeof source[key] === "object") {
@@ -99,35 +107,29 @@ function loadAssets(onComplete) {
                 continue;
             }
 
-            totalAssets++;
-
             const extension = source[key].split(".").pop().toLowerCase();
-            const asset = extension === "mp3" ? new Audio() : new Image();
 
-            if (asset instanceof Audio) {
-                asset.addEventListener("canplaythrough", () => {
-                    loadedCount++;
-
-                    if (loadedCount === totalAssets) {
-                        onComplete();
-                    }
-                }, { once: true });
-            } else {
-                asset.onload = () => {
-                    loadedCount++;
-
-                    if (loadedCount === totalAssets) {
-                        onComplete();
-                    }
-                };
+            if (extension === "mp3") {
+                // Audio is not required for the game to look ready.
+                // iOS Safari only loads it after a tap, so it is not counted.
+                const audio = new Audio();
+                audio.preload = "auto";
+                audio.src = source[key];
+                target[key] = audio;
+                continue;
             }
 
-            asset.onerror = () => {
+            totalRequiredAssets++;
+
+            const image = new Image();
+            image.onload = assetLoaded;
+            image.onerror = () => {
                 console.error(`Failed to load asset: ${source[key]}`);
+                assetLoaded();
             };
 
-            target[key] = asset;
-            asset.src = source[key];
+            target[key] = image;
+            image.src = source[key];
         }
     }
 
