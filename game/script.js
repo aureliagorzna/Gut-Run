@@ -1,11 +1,10 @@
+const audioButton = document.getElementById("audioToggle");
 const canvas = document.querySelector("canvas");
 const ctx = canvas.getContext("2d");
 
 canvas.width = 360;
 canvas.height = 640;
 
-canvas.style.width = "100%"
-canvas.style.height = "100%"
 canvas.style.touchAction = "none";
 
 const clickTag = window.clickTag || 'https://example.com/landing';
@@ -16,10 +15,11 @@ const DEBUG = false;
 let currentView = "game"; // game | win | fail
 let hasGameStarted = false;
 let isGameRunning = false
+let isAudioMuted = false;
 const gameSpeed = 0.3; // how fast gameplay image is moving
 const playerFallSpeed = 3; // how fast the player is falling
 const playerJumpSpeed = 4; // how fast player moves during a jump
-const playerJumpDistance = 20
+const playerJumpDistance = 15
 const timeoutAfterJump = 300; // how long player doesn't fall after a jump
 const startDelay = 1000
 const failScreenDelay = 1200
@@ -27,7 +27,7 @@ const failScreenDelay = 1200
 let playerPos = 300; // starting Y pos
 const minPlayerPos = 580;
 const maxPlayerPos = 200;
-const gameplayLimit = 0.3; // 1 means full width of gameplay is used
+const gameplayLimit = 0.3; // 1 means full width of gameplay texture is used
 let isJumpHeld = false;
 let isFallingDisabled = false;
 
@@ -200,7 +200,9 @@ window.addEventListener("contextmenu", (e) => {
 document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
         for (const name of currentAudio) {
-            pauseAudio(name)
+            const audio = assets.music[name];
+
+            if (!audio.ended) pauseAudio(name)
         }
 
         if (hasGameStarted) {
@@ -208,7 +210,9 @@ document.addEventListener("visibilitychange", () => {
         }
     } else {
         for (const name of currentAudio) {
-            playAudio(name)
+            const audio = assets.music[name];
+            
+            if (!audio.ended) playAudio(name)
         }
 
         if (hasGameStarted) {
@@ -216,6 +220,12 @@ document.addEventListener("visibilitychange", () => {
         }
     }
 })
+
+audioButton.addEventListener("pointerdown", event => {
+    event.stopPropagation();
+});
+
+audioButton.addEventListener("click", toggleAudio);
 
 function useWinCta(event) {
     const rect = canvas.getBoundingClientRect();
@@ -288,6 +298,50 @@ function useFailReplay(event) {
 
 // <----------------------- DRAW ASSETS -----------------------> //
 
+let endcardAnimationStart = 0;
+const endcardAnimationDuration = 1100;
+
+const easeOutBack = (t) => {
+    const c1 = 1.70158;
+    const c3 = c1 + 1;
+
+    return 1 + c3 * Math.pow(t - 1, 3)
+        + c1 * Math.pow(t - 1, 2);
+};
+
+const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+
+function getAnimationProgress(delay, duration = 450) {
+    const elapsed = performance.now() - endcardAnimationStart - delay;
+    return Math.max(0, Math.min(elapsed / duration, 1));
+}
+
+function drawAnimatedAsset(img, x, y, progress, options = {}) {
+    if (!img || progress <= 0) return;
+
+    const {
+        scale = 1,
+        rotation = 0,
+        offsetY = 0,
+        alpha = 1,
+        easing = easeOutBack
+    } = options;
+
+    const eased = easing(progress);
+
+    const width = img.width / 2 * scale * eased;
+    const height = img.height / 2 * scale * eased;
+
+    ctx.save();
+
+    ctx.globalAlpha = alpha * Math.min(progress * 3, 1);
+    ctx.translate(x + img.width / 4, y + img.height / 4 + offsetY * (1 - eased));
+    ctx.rotate(rotation * (1 - eased));
+    ctx.drawImage(img, -width / 2, -height / 2, width, height);
+
+    ctx.restore();
+}
+
 function drawAsset(img, x, y, offsetX = 0, offsetY = 0) {
     if (!img) return;
     ctx.drawImage(img, x, y, img.width / 2 + offsetX, img.height / 2 + offsetY);
@@ -329,47 +383,198 @@ function drawGame() {
     }
 }
 
+const drawEndcardButton = (img, x, y, progress) => {
+    if (!img || progress <= 0) return;
+
+    const offsetY = 40 * (1 - easeOutCubic(progress));
+
+    ctx.save();
+    ctx.globalAlpha = Math.min(progress * 3, 1);
+
+    ctx.drawImage(
+        img,
+        x,
+        y + offsetY,
+        img.width / 2,
+        img.height / 2
+    );
+
+    ctx.restore();
+};
+
 function drawWin() {
-    drawAsset(assets.win.bubble, 0, 0)
-    drawAsset(assets.win.happy, 0, 0)
-    drawAsset(assets.win.konfetti, 0, 0)
-    drawAsset(assets.win.hl, 0, 0)
-    drawAsset(assets.win.cta, 30, 560)
+    const bubble = getAnimationProgress(0, 500);
+    const happy = getAnimationProgress(150, 450);
+    const konfetti = getAnimationProgress(300, 650);
+    const hl = getAnimationProgress(450, 450);
+    const cta = getAnimationProgress(650, 450);
+
+    // Bubble
+    if (bubble > 0) {
+        const scale = 0.85 + 0.15 * easeOutBack(bubble);
+
+        ctx.save();
+        ctx.globalAlpha = Math.min(bubble * 3, 1);
+        ctx.translate(180, 320);
+        ctx.scale(scale, scale);
+        ctx.translate(-180, -320);
+        drawAsset(assets.win.bubble, 0, 0);
+        ctx.restore();
+    }
+
+    // Character
+    if (happy > 0) {
+        const scale = 0.6 + 0.4 * easeOutBack(happy);
+
+        ctx.save();
+        ctx.globalAlpha = Math.min(happy * 3, 1);
+        ctx.translate(180, 320);
+        ctx.scale(scale, scale);
+        ctx.translate(-180, -320);
+        drawAsset(assets.win.happy, 0, 0);
+        ctx.restore();
+    }
+
+    // Confetti
+    if (konfetti > 0) {
+        const scale = 0.35 + 0.65 * easeOutBack(konfetti);
+
+        ctx.save();
+        ctx.globalAlpha = Math.min(konfetti * 3, 1);
+        ctx.translate(180, 320);
+        ctx.scale(scale, scale);
+        ctx.translate(-180, -320);
+        drawAsset(assets.win.konfetti, 0, 0);
+        ctx.restore();
+    }
+
+    // Headline
+    if (hl > 0) {
+        const scale = 0.8 + 0.2 * easeOutBack(hl);
+
+        ctx.save();
+        ctx.globalAlpha = Math.min(hl * 3, 1);
+        ctx.translate(180, 320);
+        ctx.scale(scale, scale);
+        ctx.translate(-180, -320);
+        drawAsset(assets.win.hl, 0, 0);
+        ctx.restore();
+    }
+
+    // CTA
+    drawEndcardButton(assets.win.cta, 30, 560, cta);
 }
 
 function drawFail() {
-    drawAsset(assets.fail.bubble, 0, 0)
-    drawAsset(assets.fail.sad, 0, 0)
-    drawAsset(assets.fail.hl, 0, 0)
-    drawAsset(assets.fail.cta, 30, 480) // clickout
-    drawAsset(assets.fail.replay, 30, 540) // restart game
+    const bubble = getAnimationProgress(0);
+    const sad = getAnimationProgress(150);
+    const hl = getAnimationProgress(250);
 
-    drawAsset(assets.fail.bac1, 0, 0)
-    drawAsset(assets.fail.bac2, 0, 0)
-    drawAsset(assets.fail.bac3, 0, 0)
-    drawAsset(assets.fail.bac4, 0, 0)
-    drawAsset(assets.fail.bac5, 0, 0)
+    const bac1 = getAnimationProgress(300);
+    const bac2 = getAnimationProgress(350);
+    const bac3 = getAnimationProgress(400);
+    const bac4 = getAnimationProgress(450);
+    const bac5 = getAnimationProgress(500);
+
+    const cta = getAnimationProgress(600);
+    const replay = getAnimationProgress(750);
+
+    drawAnimatedAsset(assets.fail.bubble, 0, 0, bubble, {
+        offsetY: -100
+    });
+
+    drawAnimatedAsset(assets.fail.sad, 0, 0, sad, {
+        scale: 0.8
+    });
+
+    drawAnimatedAsset(assets.fail.hl, 0, 0, hl, {
+        offsetY: 50
+    });
+
+    drawAnimatedAsset(assets.fail.bac1, 0, 0, bac1, {
+        rotation: -0.3
+    });
+
+    drawAnimatedAsset(assets.fail.bac2, 0, 0, bac2, {
+        rotation: 0.3
+    });
+
+    drawAnimatedAsset(assets.fail.bac3, 0, 0, bac3, {
+        rotation: -0.2
+    });
+
+    drawAnimatedAsset(assets.fail.bac4, 0, 0, bac4, {
+        rotation: 0.2
+    });
+
+    drawAnimatedAsset(assets.fail.bac5, 0, 0, bac5, {
+        rotation: -0.3
+    });
+
+    drawEndcardButton(assets.fail.cta, 30, 480, cta);
+    drawEndcardButton(assets.fail.replay, 30, 540, replay);
 }
 
 function drawObstacles() {
     const scaleY = (assets.gameplay.height / 2 - 120) / assets.gameplay.height;
+    const currentTime = performance.now();
 
     obstacles.forEach((obstacle) => {
         const sprite = obstacle.sprite;
-
         const obstacleScale = obstacle.scale || 0.5;
-
-        const obstacleWidth = sprite.width * obstacleScale;
-        const obstacleHeight = sprite.height * obstacleScale;
 
         const screenX = gameplayPos + obstacle.x;
         const screenY = 100 + obstacle.y * scaleY;
 
-        ctx.save();
+        let visualScale = obstacleScale;
 
+        if (obstacle.isBacteria) {
+            // Start the animation when the bacteria enters the screen
+            const halfWidth = sprite.width * obstacleScale / 2;
+            const halfHeight = sprite.height * obstacleScale / 2;
+
+            const isVisible =
+                screenX + halfWidth > 0 &&
+                screenX - halfWidth < canvas.width &&
+                screenY + halfHeight > 0 &&
+                screenY - halfHeight < canvas.height;
+
+            if (!isVisible && obstacle.animationStart === undefined) {
+                // Wait until the bacteria becomes visible
+                visualScale = 0;
+            } else {
+                if (obstacle.animationStart === undefined) {
+                    obstacle.animationStart = currentTime;
+                }
+
+                const progress = Math.min(
+                    (currentTime - obstacle.animationStart) / 450,
+                    1
+                );
+
+                // Pop into view
+                const popScale = easeOutBack(progress);
+
+                // Gentle continuous pulsing after appearing
+                const pulse = 1 + Math.sin(currentTime * 0.004 + obstacle.x) * 0.04;
+
+                visualScale = obstacleScale * popScale * pulse;
+            }
+        }
+
+        const obstacleWidth = sprite.width * visualScale;
+        const obstacleHeight = sprite.height * visualScale;
+
+        ctx.save();
         ctx.translate(screenX, screenY);
 
-        ctx.drawImage(sprite, -obstacleWidth / 2, -obstacleHeight / 2, obstacleWidth, obstacleHeight);
+        ctx.drawImage(
+            sprite,
+            -obstacleWidth / 2,
+            -obstacleHeight / 2,
+            obstacleWidth,
+            obstacleHeight
+        );
 
         ctx.restore();
     });
@@ -477,8 +682,6 @@ function updateCollisionMask() {
 }
 
 function checkCollision() {
-    // if (!hasGameStarted) return false;
-
     updateCollisionMask();
 
     const playerVisualWidth = assets.player.width / 2;
@@ -517,8 +720,6 @@ function checkCollision() {
 }
 
 function checkObstacleCollision() {
-    // if (!hasGameStarted) return false;
-
     // Player collision marker
     const playerX = 60 + assets.player.width / 4;
     const playerY = playerPos + assets.player.height / 4;
@@ -580,12 +781,12 @@ function generateObstacles() {
     }
 
     const positionedBacterias = [
-        { x: 125, y: 700, sprite: bacteriaSprites[5], scale: 0.4 },
-        { x: 275, y: 900, sprite: bacteriaSprites[1], scale: 0.5 },
-        { x: 425, y: 835, sprite: bacteriaSprites[0], scale: 0.3 },
-        { x: 600, y: 1130, sprite: bacteriaSprites[2], scale: 0.3 },
-        { x: 750, y: 330, sprite: bacteriaSprites[3], scale: 0.5 },
-        { x: 515, y: 460, sprite: bacteriaSprites[4], scale: 0.4 },
+        { x: 125, y: 700, sprite: bacteriaSprites[5], scale: 0.4, isBacteria: true },
+        { x: 275, y: 900, sprite: bacteriaSprites[1], scale: 0.5, isBacteria: true },
+        { x: 425, y: 835, sprite: bacteriaSprites[0], scale: 0.3, isBacteria: true },
+        { x: 600, y: 1130, sprite: bacteriaSprites[2], scale: 0.3, isBacteria: true },
+        { x: 750, y: 330, sprite: bacteriaSprites[3], scale: 0.5, isBacteria: true },
+        { x: 515, y: 460, sprite: bacteriaSprites[4], scale: 0.4, isBacteria: true },
     ];
 
     positionedBacterias.forEach((bacteria) => obstacles.push(bacteria));
@@ -696,6 +897,7 @@ function gameReset() {
     gameplayPos = 0
     playerPos = 300
     isJumpHeld = false;
+    playerPosBeforeJump = 0
     isFallingDisabled = false;
     hasGameStarted = false
     isGameRunning = false
@@ -719,20 +921,37 @@ function pauseAllMusic(reset) {
     }
 }
 
+function toggleAudio() {
+    isAudioMuted = !isAudioMuted;
+
+    Object.values(assets.music).forEach(audio => {
+        audio.muted = isAudioMuted;
+    });
+
+    audioButton.classList.toggle("muted", isAudioMuted);
+
+    audioButton.setAttribute(
+        "aria-label",
+        isAudioMuted ? "Unmute audio" : "Mute audio"
+    );
+}
+
 function switchView(view) {
-    currentAudio.clear()
+    currentAudio.clear();
 
     if (view === "game") {
-        gameReset()
+        gameReset();
     } else if (view === "fail") {
-        currentView = "fail"
+        currentView = "fail";
+        endcardAnimationStart = performance.now();
 
-        playAudio("fail")
+        playAudio("fail");
     } else if (view === "win") {
-        currentView = "win"
+        currentView = "win";
+        endcardAnimationStart = performance.now();
 
-        playAudio("win")
-        playAudio("applause")
+        playAudio("win");
+        playAudio("applause");
     }
 }
 
