@@ -1,9 +1,15 @@
 body {
     margin: 0;
     padding: 0;
+    background-color: #0B1E49;
 }
 
 canvas {
+    display: block;
+    width: min(100vw, 45vh);
+    height: auto;
+    max-height: 100vh;
+
     -webkit-user-select: none; /* Safari */
     user-select: none;         /* Standard */
     -webkit-touch-callout: none; /* Mobile iOS */
