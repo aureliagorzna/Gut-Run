@@ -826,27 +826,27 @@ const disableFallingShortTime = () => {
 
 let gameplayLength
 let gameplayPos = 0;
-const moveGameplay = () => {
+const moveGameplay = (frameMultiplier) => {
     if (gameplayPos > gameplayLength * gameplayLimit) {
-        gameplayPos -= gameSpeed;
+        gameplayPos -= gameSpeed * frameMultiplier;
     }
 };
 
-const playerFall = () => {
+const playerFall = (frameMultiplier) => {
     if (isFallingDisabled || isJumpHeld || playerPos >= minPlayerPos) {
         return;
     }
-    playerPos += playerFallSpeed;
+    playerPos += playerFallSpeed * frameMultiplier;
 };
 
 let playerPosBeforeJump = 0;
-const playerJump = () => {
+const playerJump = (frameMultiplier) => {
     if (!isJumpHeld && playerPosBeforeJump > 0) {
         if (playerPos > playerPosBeforeJump - playerJumpDistance) {
             // player jump wont overshoot intended distance
             playerPos = Math.max(
                 playerPosBeforeJump - playerJumpDistance,
-                playerPos - playerJumpSpeed
+                playerPos - playerJumpSpeed * frameMultiplier
             );
             return;
         }
@@ -858,7 +858,7 @@ const playerJump = () => {
     if (isJumpHeld && playerPos > maxPlayerPos) {
         playerPos = Math.max(
             maxPlayerPos,
-            playerPos - playerJumpSpeed
+            playerPos - playerJumpSpeed * frameMultiplier
         );
     }
 };
@@ -955,24 +955,34 @@ function switchView(view) {
     }
 }
 
-function gameLogic() {
-    if (isGameRunning) {
-        moveGameplay();
+let lastFrameTime = 0;
 
-        playerJump();
-        playerFall();
+function gameLogic(timestamp) {
+    const deltaTime = lastFrameTime
+        ? Math.min(timestamp - lastFrameTime, 50)
+        : 1000 / 60;
+
+    lastFrameTime = timestamp;
+
+    const frameMultiplier = deltaTime / (1000 / 60);
+
+    if (isGameRunning) {
+        moveGameplay(frameMultiplier);
+
+        playerJump(frameMultiplier);
+        playerFall(frameMultiplier);
 
         if (checkCollision() || checkObstacleCollision()) {
-            pauseGame()
+            pauseGame();
 
             setTimeout(() => {
-                switchView("fail")
-            }, failScreenDelay)
+                switchView("fail");
+            }, failScreenDelay);
         }
 
         if (playerPos >= 400 && gameplayPos <= -650) {
-            pauseGame()
-            switchView("win")
+            pauseGame();
+            switchView("win");
         }
     }
 
