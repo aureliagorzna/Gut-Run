@@ -881,7 +881,6 @@ function resumeGame() {
 function pauseGame() {
     isGameRunning = false;
     pauseAudio("background");
-    playAudio("crash");
 }
 
 function gameReset() {
@@ -961,6 +960,7 @@ function gameLogic(timestamp) {
 
         if (checkCollision() || checkObstacleCollision()) {
             pauseGame();
+            playAudio("crash");
 
             setTimeout(() => {
                 switchView("fail");
