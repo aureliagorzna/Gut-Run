@@ -34,55 +34,55 @@ let isFallingDisabled = false;
 // <----------------------- LOAD ASSETS -----------------------> //
 
 const assetSources = {
-    background: "./assets/bg.jpg",
-    gesture: "./assets/gesture.png",
-    bgTexture: "./assets/01_game/bg_texture.png",
-    logo: "./assets/logo.png",
-    tut: "./assets/01_game/tut.png",
-    border: "./assets/border.png",
-    gameplay: "./assets/01_game/gameplay.png",
-    player: "./assets/01_game/player.png",
-    bac1: "./assets/01_game/bac1.png",
-    bac2: "./assets/01_game/bac2.png",
-    bac3: "./assets/01_game/bac3.png",
-    bac4: "./assets/01_game/bac4.png",
-    bac5: "./assets/01_game/bac5.png",
-    bac6: "./assets/01_game/bac6.png",
-    txt1: "./assets/01_game/txt1.png",
-    txt2: "./assets/01_game/txt2.png",
-    txt3: "./assets/01_game/txt3.png",
-    txt4: "./assets/01_game/txt4.png",
-    txt5: "./assets/01_game/txt5.png",
-    txt6: "./assets/01_game/txt6.png",
-    txt7: "./assets/01_game/txt7.png",
-    txt8: "./assets/01_game/txt8.png",
-    txt9: "./assets/01_game/txt9.png",
+    background: "../assets/bg.jpg",
+    gesture: "../assets/gesture.png",
+    bgTexture: "../assets/01_game/bg_texture.png",
+    logo: "../assets/logo.png",
+    tut: "../assets/01_game/tut.png",
+    border: "../assets/border.png",
+    gameplay: "../assets/01_game/gameplay.png",
+    player: "../assets/01_game/player.png",
+    bac1: "../assets/01_game/bac1.png",
+    bac2: "../assets/01_game/bac2.png",
+    bac3: "../assets/01_game/bac3.png",
+    bac4: "../assets/01_game/bac4.png",
+    bac5: "../assets/01_game/bac5.png",
+    bac6: "../assets/01_game/bac6.png",
+    txt1: "../assets/01_game/txt1.png",
+    txt2: "../assets/01_game/txt2.png",
+    txt3: "../assets/01_game/txt3.png",
+    txt4: "../assets/01_game/txt4.png",
+    txt5: "../assets/01_game/txt5.png",
+    txt6: "../assets/01_game/txt6.png",
+    txt7: "../assets/01_game/txt7.png",
+    txt8: "../assets/01_game/txt8.png",
+    txt9: "../assets/01_game/txt9.png",
 
     win: {
-        bubble: "./assets/02_endcard/win/bubble.png",
-        cta: "./assets/02_endcard/win/cta.png",
-        happy: "./assets/02_endcard/win/happy.png",
-        hl: "./assets/02_endcard/win/hl.png",
-        konfetti: "./assets/02_endcard/win/konfetti.png",
+        bubble: "../assets/02_endcard/win/bubble.png",
+        cta: "../assets/02_endcard/win/cta.png",
+        happy: "../assets/02_endcard/win/happy.png",
+        hl: "../assets/02_endcard/win/hl.png",
+        konfetti: "../assets/02_endcard/win/konfetti.png",
     },
     fail: {
-        bac1: "./assets/02_endcard/fail/bac1.png",
-        bac2: "./assets/02_endcard/fail/bac2.png",
-        bac3: "./assets/02_endcard/fail/bac3.png",
-        bac4: "./assets/02_endcard/fail/bac4.png",
-        bac5: "./assets/02_endcard/fail/bac5.png",
-        bubble: "./assets/02_endcard/fail/bubble.png",
-        cta: "./assets/02_endcard/fail/cta.png",
-        hl: "./assets/02_endcard/fail/hl.png",
-        replay: "./assets/02_endcard/fail/replay.png",
-        sad: "./assets/02_endcard/fail/sad.png",
+        bac1: "../assets/02_endcard/fail/bac1.png",
+        bac2: "../assets/02_endcard/fail/bac2.png",
+        bac3: "../assets/02_endcard/fail/bac3.png",
+        bac4: "../assets/02_endcard/fail/bac4.png",
+        bac5: "../assets/02_endcard/fail/bac5.png",
+        bubble: "../assets/02_endcard/fail/bubble.png",
+        cta: "../assets/02_endcard/fail/cta.png",
+        hl: "../assets/02_endcard/fail/hl.png",
+        replay: "../assets/02_endcard/fail/replay.png",
+        sad: "../assets/02_endcard/fail/sad.png",
     },
     music: {
-        background: "./assets/music/background_music/Funny Game Loop.mp3",
-        crash: "./assets/music/crash/Cartoon Crash Boing.mp3",
-        fail: "./assets/music/endcard_fail/Fail.mp3",
-        win: "./assets/music/endcard_win/Celebrative Happy Woohoo Cheer 2.mp3",
-        applause: "./assets/music/endcard_win/applause.mp3",
+        background: "../assets/music/background_music/Funny Game Loop.mp3",
+        crash: "../assets/music/crash/Cartoon Crash Boing.mp3",
+        fail: "../assets/music/endcard_fail/Fail.mp3",
+        win: "../assets/music/endcard_win/Celebrative Happy Woohoo Cheer 2.mp3",
+        applause: "../assets/music/endcard_win/applause.mp3",
     },
 };
 
@@ -820,7 +820,7 @@ const disableFallingShortTime = () => {
 };
 
 let gameplayLength;
-let gameplayPos = 0;
+let gameplayPos = -660;
 const moveGameplay = (frameMultiplier) => {
     if (gameplayPos > gameplayLength * gameplayLimit) {
         gameplayPos -= gameSpeed * frameMultiplier;
@@ -881,7 +881,6 @@ function resumeGame() {
 function pauseGame() {
     isGameRunning = false;
     pauseAudio("background");
-    playAudio("crash");
 }
 
 function gameReset() {
@@ -961,6 +960,7 @@ function gameLogic(timestamp) {
 
         if (checkCollision() || checkObstacleCollision()) {
             pauseGame();
+            playAudio("crash");
 
             setTimeout(() => {
                 switchView("fail");
